@@ -222,7 +222,9 @@ int main()
 	fileBuf = new BYTE[fileSize];
 	fread(fileBuf, fileSize, 1, file);
 
+
 	cout << "======HEADER==INFO=======" << endl;	
+
 
 	outputASCII(fileBuf, 0, 4, "signature   :");
 	cout << "unknown     : TODO" << endl;
@@ -232,45 +234,61 @@ int main()
 	unsigned long  fatOffset = ((unsigned char)fileBuf[6] << 16) | ((unsigned char)fileBuf[5] << 8) | (unsigned char)fileBuf[4]; //FIXME
 	printf("fatOffset   : %lu\n", fatOffset);
 
+
 	cout << "======LOOKING=AT=FAT====" << endl;
 
-	// For now we just look at the first file in the fat - TODO: later on implement a pass where all fileoffsets are calculated
-	FileEntry f;
-	
-	outputASCII(fileBuf, fatOffset, 13, "File name   :");
 
-	f.compressed = (bool)fileBuf[fatOffset+13+1];
-	printf("compressed  : %d\n", f.compressed);
+	unsigned long tempOffset = fatOffset;
+	int filesEncountered = 0;
+
+	while ( tempOffset < fileSize ) {
+
+		FileEntry f;
+	
+		outputASCII(fileBuf, tempOffset, 13, "File name   :");
+
+		f.compressed = (bool)fileBuf[tempOffset+13+1];
+		printf("compressed  : %d\n", f.compressed);
 
     
-	char compressedSizeHex[8];
-	memset(compressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
-	nibblesLEToHexString(fileBuf, (fatOffset + 14), 4, compressedSizeHex);
-	sscanf(compressedSizeHex, "%x", &f.compressedSize);
-	cout << "comp. size  : " << f.compressedSize << endl;
+		char compressedSizeHex[8];
+		memset(compressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
+		nibblesLEToHexString(fileBuf, (tempOffset + 14), 4, compressedSizeHex);
+		sscanf(compressedSizeHex, "%x", &f.compressedSize);
+		cout << "comp. size  : " << f.compressedSize << endl;
+	
+	
+		char deCompressedSizeHex[8];
+		memset(deCompressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
+		nibblesLEToHexString(fileBuf, (tempOffset + 18), 4, deCompressedSizeHex);
+		sscanf(deCompressedSizeHex, "%x", &f.deCompressedSize);
+		cout << "decomp. size: " << f.deCompressedSize << endl;
+	
+		tempOffset += 22;
+		filesEncountered += 1;
+	
+	}
 
-
-	char deCompressedSizeHex[8];
-	memset(deCompressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
-	nibblesLEToHexString(fileBuf, (fatOffset + 18), 4, deCompressedSizeHex);
-	sscanf(deCompressedSizeHex, "%x", &f.deCompressedSize);
-	cout << "decomp. size: " << f.deCompressedSize << endl;
+	cout << "" << endl;	
+	cout << "Files expected in fat table    : " << "TODO" << endl;
+	cout << "Files encountered in fat table : " << filesEncountered << endl;
 
 	
 	// TODO:	
-	//set the offset of the first file to the location after the header, the following files offset needs to be calculated....
-
-
+	// * set the (calculated ) offset of the first file to the location after the header, the following files offset needs to be calculated....
+	// * figure out why there are some jumbled caharcters extra in some of the filenames.....
+	// * store f filentries in a arraylist
+	// * have a goo at dumping the compressed files to disk
 
 	// Test crap below this line ......
-	cout << "TODO : we need to convert these hex values to UINT32 = (3539) : " << endl;
-	for (unsigned int i = fatOffset + 14; i < (fatOffset + 18); i++)
-		printf("%02X ", fileBuf[i]);
-	
-	cout << "" << endl;
-	cout << "TODO : we need to convert these hex values to UINT32 = (6092) : " << endl;
-	for (unsigned int i = fatOffset + 18; i < (fatOffset + 22); i++)
-		printf("%02X ", fileBuf[i]);
+//	cout << "TODO : we need to convert these hex values to UINT32 = (3539) : " << endl;
+//	for (unsigned int i = fatOffset + 14; i < (fatOffset + 18); i++)
+//		printf("%02X ", fileBuf[i]);
+//	
+//	cout << "" << endl;
+//	cout << "TODO : we need to convert these hex values to UINT32 = (6092) : " << endl;
+//	for (unsigned int i = fatOffset + 18; i < (fatOffset + 22); i++)
+//		printf("%02X ", fileBuf[i]);
 
 
 	cout << "" << endl;
