@@ -1,13 +1,27 @@
+/*****************************************************************************************
+* File: main.cpp
+* Desc: file analyser / dumper tool for the Universe game from Core (1994).
+*****************************************************************************************/
+
+/*
+License :	Yadadadadadadadada, this code is free, you can use it for anything as long as you don't hold me liable for ANY damages
+			that may be the result of using it. This includes dying of laughter of the piss poor quality. If you use it for
+            anything, it would be nice if you dropped me a line, but this is optional.             
+*/
+
+// ----- Includes -----
+
 #include <stdio.h>
 #include <iostream>
 #include <stack>
 #include <cstdlib>
 #include <string.h>
+#include <stdint.h>
 
 using namespace std;
 
-typedef unsigned char BYTE;       // An unsigned char can store 1 Bytes (8bits) of data (0-255)
-typedef unsigned long int UINT32;
+typedef unsigned char	BYTE;       // An unsigned char can store 1 Bytes (8bits) of data (0-255)
+typedef unsigned int	UINT32;
 
 struct structFileEntry {
 	char*	filename;
@@ -21,7 +35,7 @@ struct structFileEntry {
 		compressed			= false;
 		compressedSize		= 0;
 		deCompressedSize	= 0;
-		fileOffset 			= 0;
+		fileOffset			= 0;
 	}
 
 	~structFileEntry() {
@@ -59,6 +73,52 @@ void outputUnsignedDecimalInteger(BYTE buf[], int index, int read){
 	}
 	printf("\n");
 }
+
+void nibblesToHexString(BYTE buf[], int index, int read, char* back){
+	char result[50];
+	memset(result, 0, 50);
+	char charBuf[3];
+	
+	for (unsigned int i = index; i < (index + read ); i++){
+		//printf("%02X ", buf[i]);
+		int b = sprintf(charBuf, "%02X", buf[i]);
+		//cout << b << endl;
+		
+		strncat(result, charBuf, 2);
+	}
+
+	//printf("%s", result);
+
+	//printf("\n");
+
+	strcat(back,result);
+}
+
+
+void nibblesLEToHexString(BYTE buf[], int index, int read, char* back){
+	char result[50];
+	memset(result, 0, 50);
+	char charBuf[3];
+	
+	for (unsigned int i = (index + read - 1 ); i >= index; i--){
+		//printf("%02X ", buf[i]);
+		int b = sprintf(charBuf, "%02X", buf[i]);
+		//cout << b << endl;
+		
+		strncat(result, charBuf, 2);
+	}
+
+	//printf("%s", result);
+
+	//printf("\n");
+
+	strcat(back,result);
+}
+
+
+
+
+
 
 // Converts a hexadecimal string to integer
 int xtoi(const char* xs, unsigned int* result)
@@ -182,24 +242,43 @@ int main()
 	f.compressed = (bool)fileBuf[fatOffset+13+1];
 	printf("compressed  : %d\n", f.compressed);
 
-	// something is wrong here: hexeditor says that compressed size should be 3539 decimal aka "D3 0D 00 00" in hex
-	f.compressedSize = ((unsigned char)fileBuf[6100488] << 16) | ((unsigned char)fileBuf[6100487] << 8) | (unsigned char)fileBuf[6100486]; // FIXME: same goes fore this one...
-	printf("%lu\n", f.compressedSize);
-	
-	// hexeditor states : uncompressed 6092 decimal aka "CC 17 00 00" hex
+    
+	char compressedSizeHex[8];
+	memset(compressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
+	nibblesLEToHexString(fileBuf, (fatOffset + 14), 4, compressedSizeHex);
+	sscanf(compressedSizeHex, "%x", &f.compressedSize);
+	cout << "comp. size  : " << f.compressedSize << endl;
 
+
+	char deCompressedSizeHex[8];
+	memset(deCompressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
+	nibblesLEToHexString(fileBuf, (fatOffset + 18), 4, deCompressedSizeHex);
+	sscanf(deCompressedSizeHex, "%x", &f.deCompressedSize);
+	cout << "decomp. size: " << f.deCompressedSize << endl;
+
+	
+	// TODO:	
+	//set the offset of the first file to the location after the header, the following files offset needs to be calculated....
+
+
+
+	// Test crap below this line ......
 	cout << "TODO : we need to convert these hex values to UINT32 = (3539) : " << endl;
 	for (unsigned int i = fatOffset + 14; i < (fatOffset + 18); i++)
 		printf("%02X ", fileBuf[i]);
+	
 	cout << "" << endl;
 	cout << "TODO : we need to convert these hex values to UINT32 = (6092) : " << endl;
 	for (unsigned int i = fatOffset + 18; i < (fatOffset + 22); i++)
 		printf("%02X ", fileBuf[i]);
 
 
-	cin.get();
+	cout << "" << endl;
+	cout << "" << endl;
+	//cin.get();
 	delete[]fileBuf;
-        fclose(file);   // Almost forgot this 
+    fclose(file);
+
 	return 0;
 }
 
