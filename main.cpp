@@ -1,50 +1,62 @@
+
+
+// UniverseTest.cpp : Defines the entry point for the console application.
+//
+
+//#include "stdafx.h"    ... precompiled headers for win ... yuck ....
+
 /*****************************************************************************************
 * File: main.cpp
 * Desc: file analyser / dumper tool for the Universe game from Core (1994).
 *****************************************************************************************/
 
 /*
-License :	Yadadadadadadadada, this code is free, you can use it for anything as long as you don't hold me liable for ANY damages
-			that may be the result of using it. This includes dying of laughter of the piss poor quality. If you use it for
-            anything, it would be nice if you dropped me a line, but this is optional.             
+License :	Yadadadadadadadada, this code is free, you can use it for
+anything as long as you don't hold me liable for ANY damages
+			that may be the result of using it. This includes dying of laughter
+of the piss poor quality. If you use it for
+            anything, it would be nice if you dropped me a line, but
+this is optional.
 */
-
+// https://github.com/Malvineous/libgamearchive/blob/master/src/filter-epfs.cpp
 // ----- Includes -----
-
 #include <stdio.h>
 #include <iostream>
 #include <stack>
 #include <cstdlib>
 #include <string.h>
-#include <stdint.h>
+// #include <stdint.h>
 
 using namespace std;
 
-typedef unsigned char	BYTE;       // An unsigned char can store 1 Bytes (8bits) of data (0-255)
+typedef unsigned char	BYTE;       // An unsigned char can store 1Bytes (8bits) of data (0-255)
 typedef unsigned int	UINT32;
+typedef unsigned short  UINT16;
 
+#pragma pack(1)
+struct structFileHeader {
+	BYTE signature[4];
+	UINT32 fatOffset;
+	BYTE unknown;
+	UINT16 numFiles;
+};  // gcc - __attribute__((packed))
+
+#pragma pack(1)
 struct structFileEntry {
-	char*	filename;
-	bool	compressed;
-	UINT32	compressedSize;
-	UINT32	deCompressedSize;
-	UINT32  fileOffset; 	
+	char	filename[13];     //   SIZE 10
+	BYTE	compressed;       //   SIZE 1
+	UINT32	compressedSize;   //   SIZE 4
+	UINT32	deCompressedSize; //   SIZE 4
+};  // gcc - __attribute__((packed))
 
-	structFileEntry() {
-		filename			= new char [13];
-		compressed			= false;
-		compressedSize		= 0;
-		deCompressedSize	= 0;
-		fileOffset			= 0;
-	}
-
-	~structFileEntry() {
-		delete[] filename;
-	}
+struct structCompleteFileEntry {
+	struct structFileEntry fe;
+	UINT32 offset;
 };
+
+typedef struct structCompleteFileEntry CFileEntry;
 typedef struct structFileEntry FileEntry;
-
-
+typedef struct structFileHeader FileHeader;
 
 
 // Get the size of a file
@@ -185,7 +197,7 @@ string intToHex(unsigned int dec)
     dec /= 16;
     ++i;
   }
-  
+
   while (i != 0)
   {
     if (remainder.top() > 15)
@@ -202,10 +214,11 @@ string intToHex(unsigned int dec)
 
 
 
-
 int main()
 {
-	const char *filePath = "UNIVERSE.EPF";	// File path to the universe binary
+	UINT32 global_offset_counter_thingie = 11;
+
+	const char *filePath = "./UNIVERSE.EPF";	// File path to the universe binary
 	BYTE *fileBuf;							// Pointer to our buffered data
 	FILE *file = NULL;						// File pointer
 
@@ -219,84 +232,55 @@ int main()
 	long fileSize = getFileSize(file);
 	printf("filesize    : %lu\n", fileSize);
 
-	fileBuf = new BYTE[fileSize];
-	fread(fileBuf, fileSize, 1, file);
-
-
-	cout << "======HEADER==INFO=======" << endl;	
-
-
-	outputASCII(fileBuf, 0, 4, "signature   :");
-	cout << "unknown     : TODO" << endl;
-	cout << "numFiles    : TODO" << endl;
-	// this only works because of a small file (ie 2 missing bytes)
-	// need to figure out how to do a hex to unsigned long int conversion properly.......
-	unsigned long  fatOffset = ((unsigned char)fileBuf[6] << 16) | ((unsigned char)fileBuf[5] << 8) | (unsigned char)fileBuf[4]; //FIXME
-	printf("fatOffset   : %lu\n", fatOffset);
-
+	// fileBuf = new BYTE[fileSize];
+	// fread(fileBuf, fileSize, 1, file);
+	
+	FileHeader fh;	
+	fread(&fh, sizeof(FileHeader), 1, file);
+	
+	// printf("signature   : %s\n" );
+	// outputASCII(fileBuf, 0, 4, "signature   :");
+	printf("unknown     : %d\n", fh.unknown);
+	// cout << "unknown     : " << endl;
+	printf("numFiles    : %d\n", fh.numFiles);
+	printf("fatOffset   : %lu\n", fh.fatOffset);
 
 	cout << "======LOOKING=AT=FAT====" << endl;
-
-
-	unsigned long tempOffset = fatOffset;
-	int filesEncountered = 0;
-
-	while ( tempOffset < fileSize ) {
-
-		FileEntry f;
 	
-		outputASCII(fileBuf, tempOffset, 13, "File name   :");
+	fseek(file, fh.fatOffset, SEEK_SET);
+	
+	CFileEntry *f = new CFileEntry[fh.numFiles];
+	
+	memset((void*) f, 0x0, sizeof(FileEntry) * fh.numFiles);
 
-		f.compressed = (bool)fileBuf[tempOffset+13+1];
-		printf("compressed  : %d\n", f.compressed);
+	printf("sizeof = %d", sizeof(FileEntry));
+	for (int a =0; a < fh.numFiles; a++) {
+		
+		fread(&f[a].fe, sizeof(FileEntry), 1, file);
 
-    
-		char compressedSizeHex[8];
-		memset(compressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
-		nibblesLEToHexString(fileBuf, (tempOffset + 14), 4, compressedSizeHex);
-		sscanf(compressedSizeHex, "%x", &f.compressedSize);
-		cout << "comp. size  : " << f.compressedSize << endl;
-	
-	
-		char deCompressedSizeHex[8];
-		memset(deCompressedSizeHex, 0, 8); // hmmm, if we don't have theese memsets, the result sometimes is jumbled / explodes
-		nibblesLEToHexString(fileBuf, (tempOffset + 18), 4, deCompressedSizeHex);
-		sscanf(deCompressedSizeHex, "%x", &f.deCompressedSize);
-		cout << "decomp. size: " << f.deCompressedSize << endl;
-	
-		tempOffset += 22;
-		filesEncountered += 1;
-	
+		if(feof(file)) {
+			abort();
+		}
+
+		char buffer_filename[14];
+		strncpy(buffer_filename, f[a].fe.filename, 13);
+		buffer_filename[13] = 0x0;
+
+
+		printf("File name   : %s\n", buffer_filename);
+		// printf("compressed  : %d\n", f[a].compressed);
+		printf("comp. size  : %d\n", f[a].fe.compressedSize);
+		printf("decomp. size: %d\n", f[a].fe.deCompressedSize);	
+		
+		f[a].offset = global_offset_counter_thingie;
+		global_offset_counter_thingie += f[a].fe.compressedSize;
+		printf("offset      : %d\n", f[a].offset);	
 	}
-
-	cout << "" << endl;	
-	cout << "Files expected in fat table    : " << "TODO" << endl;
-	cout << "Files encountered in fat table : " << filesEncountered << endl;
-
 	
-	// TODO:	
-	// * set the (calculated ) offset of the first file to the location after the header, the following files offset needs to be calculated....
-	// * figure out why there are some jumbled caharcters extra in some of the filenames.....
-	// * store f filentries in a arraylist
-	// * have a goo at dumping the compressed files to disk
-
-	// Test crap below this line ......
-//	cout << "TODO : we need to convert these hex values to UINT32 = (3539) : " << endl;
-//	for (unsigned int i = fatOffset + 14; i < (fatOffset + 18); i++)
-//		printf("%02X ", fileBuf[i]);
-//	
-//	cout << "" << endl;
-//	cout << "TODO : we need to convert these hex values to UINT32 = (6092) : " << endl;
-//	for (unsigned int i = fatOffset + 18; i < (fatOffset + 22); i++)
-//		printf("%02X ", fileBuf[i]);
-
-
-	cout << "" << endl;
-	cout << "" << endl;
-	//cin.get();
-	delete[]fileBuf;
+		
     fclose(file);
 
 	return 0;
 }
+
 
