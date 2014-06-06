@@ -218,7 +218,7 @@ int main()
 {
 	UINT32 global_offset_counter_thingie = 11;
 
-	const char *filePath = "./UNIVERSE.EPF";	// File path to the universe binary
+	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
 	BYTE *fileBuf;							// Pointer to our buffered data
 	FILE *file = NULL;						// File pointer
 
@@ -232,18 +232,13 @@ int main()
 	long fileSize = getFileSize(file);
 	printf("filesize    : %lu\n", fileSize);
 
-	// fileBuf = new BYTE[fileSize];
-	// fread(fileBuf, fileSize, 1, file);
 	
 	FileHeader fh;	
 	fread(&fh, sizeof(FileHeader), 1, file);
 	
-	// printf("signature   : %s\n" );
-	// outputASCII(fileBuf, 0, 4, "signature   :");
 	printf("unknown     : %d\n", fh.unknown);
-	// cout << "unknown     : " << endl;
 	printf("numFiles    : %d\n", fh.numFiles);
-	printf("fatOffset   : %lu\n", fh.fatOffset);
+	printf("fatOffset   : %lu\n", (long unsigned int) fh.fatOffset);
 
 	cout << "======LOOKING=AT=FAT====" << endl;
 	
@@ -268,7 +263,6 @@ int main()
 
 
 		printf("File name   : %s\n", buffer_filename);
-		// printf("compressed  : %d\n", f[a].compressed);
 		printf("comp. size  : %d\n", f[a].fe.compressedSize);
 		printf("decomp. size: %d\n", f[a].fe.deCompressedSize);	
 		
