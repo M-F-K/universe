@@ -25,6 +25,7 @@ this is optional.
 #include <stack>
 #include <cstdlib>
 #include <string.h>
+#include "lzw.h"
 // #include <stdint.h>
 
 using namespace std;
@@ -214,8 +215,8 @@ string intToHex(unsigned int dec)
 
 
 
-int main()
-{
+void parseEpsStructure(){
+
 	UINT32 global_offset_counter_thingie = 11;
 
 	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
@@ -273,8 +274,15 @@ int main()
 	
 		
     fclose(file);
-
-	return 0;
 }
 
+void deflateFile(){
+//TODO
+}
+
+int main() {
+	parseEpsStructure();
+	deflateFile();
+	return 0;
+}
 
