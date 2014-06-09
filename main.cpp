@@ -276,13 +276,41 @@ void parseEpsStructure(){
     fclose(file);
 }
 
-void deflateFile(){
-//TODO
+void inflateFile(const char* packedFilename, CFileEntry* fileEntries){
+	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
+	BYTE *fileBuf;							// Pointer to our buffered data
+	FILE *file = NULL;						// File pointer
+
+	if ((file = fopen(filePath, "rb")) == NULL) {
+		cout << "Could not open specified file" << endl;
+	}
+	else {
+		cout << "File opened successfully" << endl;
+	}
+
+
+	// TODO : need to compare filename with one from index to get the entry fo the file we need to inflate
+	//        
+
+	//fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
+
+	//fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
+
+	if(feof(file)) {
+		abort();
+	}
+
+	// TODO: inflate + save file..
+
+	fclose(file);
+
+
 }
 
 int main() {
+	CFileEntry *f;
 	parseEpsStructure();
-	deflateFile();
+	inflateFile("README.TXT", f);
 	return 0;
 }
 
