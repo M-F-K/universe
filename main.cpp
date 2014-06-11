@@ -71,147 +71,6 @@ long getFileSize(FILE *file){
 }
 
 
-void outputASCII(BYTE buf[], int index, int read, const char* prefix){
-	printf("%s ", prefix);	
-	for (int i = index; i < (index + read ); i++){
-		printf("%C", buf[i]);
-	}
-	printf("\n");
-}
-
-void outputUnsignedDecimalInteger(BYTE buf[], int index, int read){
-	for (int i = index; i < (index + read ); i++){
-		
-		printf("%d", buf[i]);
-	}
-	printf("\n");
-}
-
-void nibblesToHexString(BYTE buf[], int index, int read, char* back){
-	char result[50];
-	memset(result, 0, 50);
-	char charBuf[3];
-	
-	for (unsigned int i = index; i < (index + read ); i++){
-		//printf("%02X ", buf[i]);
-		int b = sprintf(charBuf, "%02X", buf[i]);
-		//cout << b << endl;
-		
-		strncat(result, charBuf, 2);
-	}
-
-	//printf("%s", result);
-
-	//printf("\n");
-
-	strcat(back,result);
-}
-
-
-void nibblesLEToHexString(BYTE buf[], int index, int read, char* back){
-	char result[50];
-	memset(result, 0, 50);
-	char charBuf[3];
-	
-	for (unsigned int i = (index + read - 1 ); i >= index; i--){
-		//printf("%02X ", buf[i]);
-		int b = sprintf(charBuf, "%02X", buf[i]);
-		//cout << b << endl;
-		
-		strncat(result, charBuf, 2);
-	}
-
-	//printf("%s", result);
-
-	//printf("\n");
-
-	strcat(back,result);
-}
-
-
-
-
-
-
-// Converts a hexadecimal string to integer
-int xtoi(const char* xs, unsigned int* result)
-{
- size_t szlen = strlen(xs);
- int i, xv, fact;
-
- if (szlen > 0)
- {
-  // Converting more than 32bit hexadecimal value?
-  if (szlen>8) return 2; // exit
-
-  // Begin conversion here
-  *result = 0;
-  fact = 1;
-
-  // Run until no more character to convert
-  for(i=szlen-1; i>=0 ;i--)
-  {
-   if (isxdigit(*(xs+i)))
-   {
-    if (*(xs+i)>=97)
-    {
-     xv = ( *(xs+i) - 97) + 10;
-    }
-    else if ( *(xs+i) >= 65)
-    {
-     xv = (*(xs+i) - 65) + 10;
-    }
-    else
-    {
-     xv = *(xs+i) - 48;
-    }
-    *result += (xv * fact);
-    fact *= 16;
-   }
-   else
-   {
-    // Conversion was abnormally terminated
-    // by non hexadecimal digit, hence
-    // returning only the converted with
-    // an error value 4 (illegal hex character)
-    return 4;
-   }
-  }
- }
-
- // Nothing to convert
- return 1;
-}
-string intToHex(unsigned int dec)
-{
-  int i = 0;
-  stack <int>remainder;
-  string hex, temp;
-  char hexDigits[] = { "0123456789abcdef" };
-
-  if(dec == 0)
-    hex = hexDigits[0];
-
-  while (dec != 0)
-  {
-    remainder.push(dec % 16);
-    dec /= 16;
-    ++i;
-  }
-
-  while (i != 0)
-  {
-    if (remainder.top() > 15)
-    {
-      temp = intToHex(remainder.top());
-      hex += temp;
-    }
-    hex.push_back(hexDigits[remainder.top()]);
-    remainder.pop();
-    --i;
-  }
-  return hex;
-}
 
 
 
@@ -263,13 +122,13 @@ void parseEpsStructure(FileHeader fh, CFileEntry* f){
 		buffer_filename[13] = 0x0;
 
 
-		printf("File name   : %s\n", buffer_filename);
-		printf("comp. size  : %d\n", f[a].fe.compressedSize);
-		printf("decomp. size: %d\n", f[a].fe.deCompressedSize);	
+		printf("File name: %s ", buffer_filename);
+		printf("comp. size: %d ", f[a].fe.compressedSize);
+		printf("decomp. size: %d ", f[a].fe.deCompressedSize);	
 		
 		f[a].offset = global_offset_counter_thingie;
 		global_offset_counter_thingie += f[a].fe.compressedSize;
-		printf("offset      : %d\n", f[a].offset);	
+		printf("offset: %d\n", f[a].offset);	
 	}
 	
 		
