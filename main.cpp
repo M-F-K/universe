@@ -215,7 +215,7 @@ string intToHex(unsigned int dec)
 
 
 
-void parseEpsStructure(){
+void parseEpsStructure(FileHeader fh, CFileEntry* f){
 
 	UINT32 global_offset_counter_thingie = 11;
 
@@ -234,7 +234,7 @@ void parseEpsStructure(){
 	printf("filesize    : %lu\n", fileSize);
 
 	
-	FileHeader fh;	
+	//FileHeader fh;	
 	fread(&fh, sizeof(FileHeader), 1, file);
 	
 	printf("unknown     : %d\n", fh.unknown);
@@ -245,7 +245,7 @@ void parseEpsStructure(){
 	
 	fseek(file, fh.fatOffset, SEEK_SET);
 	
-	CFileEntry *f = new CFileEntry[fh.numFiles];
+	f = new CFileEntry[fh.numFiles];
 	
 	memset((void*) f, 0x0, sizeof(FileEntry) * fh.numFiles);
 
@@ -276,7 +276,7 @@ void parseEpsStructure(){
     fclose(file);
 }
 
-void inflateFile(const char* packedFilename, CFileEntry* fileEntries){
+void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* fileEntries){
 	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
 	BYTE *fileBuf;							// Pointer to our buffered data
 	FILE *file = NULL;						// File pointer
@@ -308,9 +308,10 @@ void inflateFile(const char* packedFilename, CFileEntry* fileEntries){
 }
 
 int main() {
+	FileHeader fh;
 	CFileEntry *f;
-	parseEpsStructure();
-	inflateFile("README.TXT", f);
+	parseEpsStructure(fh,f);
+	inflateFile("README.TXT", fh, f);
 	return 0;
 }
 
