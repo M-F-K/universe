@@ -40,7 +40,7 @@ struct structFileHeader {
 	UINT32 fatOffset;
 	BYTE unknown;
 	UINT16 numFiles;
-};  // gcc - __attribute__((packed))
+} __attribute__((packed));		// gcc specific pack
 
 #pragma pack(1)
 struct structFileEntry {
@@ -48,7 +48,7 @@ struct structFileEntry {
 	BYTE	compressed;       //   SIZE 1
 	UINT32	compressedSize;   //   SIZE 4
 	UINT32	deCompressedSize; //   SIZE 4
-};  // gcc - __attribute__((packed))
+} __attribute__((packed));		// gcc specific pack
 
 struct structCompleteFileEntry {
 	struct structFileEntry fe;
@@ -147,6 +147,21 @@ void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* 
 		cout << "File opened successfully" << endl;
 	}
 
+	for (int a =0; a < 1 /*fileHeader.numFiles*/; a++) {
+		
+		cout << fileEntries[a].fe.filename << endl;
+
+		char buffer_filename[14];
+		strncpy(buffer_filename, fileEntries[a].fe.filename, 13);
+		buffer_filename[13] = 0x0;
+
+		printf("File name: %s ", buffer_filename);
+
+		if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
+			cout << "File found in index" << endl;
+		}
+	}
+
 
 	// TODO : need to compare filename with one from index to get the entry fo the file we need to inflate
 	//        
@@ -162,6 +177,8 @@ void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* 
 	// TODO: inflate + save file..
 
 	fclose(file);
+
+	printf("sizeof = %d", sizeof(FileEntry));
 
 
 }
