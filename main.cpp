@@ -121,7 +121,8 @@ void parseEpsStructure(FileHeader fh, CFileEntry* f){
 		strncpy(buffer_filename, f[a].fe.filename, 13);
 		buffer_filename[13] = 0x0;
 
-
+		
+		printf("index: %d ", a);
 		printf("File name: %s ", buffer_filename);
 		printf("comp. size: %d ", f[a].fe.compressedSize);
 		printf("decomp. size: %d ", f[a].fe.deCompressedSize);	
@@ -156,6 +157,8 @@ void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* 
 		buffer_filename[13] = 0x0;
 
 		printf("File name: %s ", buffer_filename);
+		printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
+		printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
 
 		if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
 			cout << "File found in index" << endl;
