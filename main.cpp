@@ -70,127 +70,122 @@ long getFileSize(FILE *file){
 	return lEndPos;
 }
 
+void parseEpsStructure(FileHeader fh, CFileEntry** f_ptr){
 
-
-
-
-void parseEpsStructure(FileHeader fh, CFileEntry* f){
-
-	UINT32 global_offset_counter_thingie = 11;
-
-	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-	BYTE *fileBuf;							// Pointer to our buffered data
-	FILE *file = NULL;						// File pointer
-
-	if ((file = fopen(filePath, "rb")) == NULL) {
-		cout << "Could not open specified file" << endl;
-	}
-	else {
-		cout << "File opened successfully" << endl;
-	}
-
-	long fileSize = getFileSize(file);
-	printf("filesize    : %lu\n", fileSize);
-
-	
-	//FileHeader fh;	
-	fread(&fh, sizeof(FileHeader), 1, file);
-	
-	printf("unknown     : %d\n", fh.unknown);
-	printf("numFiles    : %d\n", fh.numFiles);
-	printf("fatOffset   : %lu\n", (long unsigned int) fh.fatOffset);
-
-	cout << "======LOOKING=AT=FAT====" << endl;
-	
-	fseek(file, fh.fatOffset, SEEK_SET);
-	
-	f = new CFileEntry[fh.numFiles];
-	
-	memset((void*) f, 0x0, sizeof(FileEntry) * fh.numFiles);
-
-	printf("sizeof = %d", sizeof(FileEntry));
-	for (int a =0; a < fh.numFiles; a++) {
-		
-		fread(&f[a].fe, sizeof(FileEntry), 1, file);
-
-		if(feof(file)) {
-			abort();
-		}
-
-		char buffer_filename[14];
-		strncpy(buffer_filename, f[a].fe.filename, 13);
-		buffer_filename[13] = 0x0;
-
-		
-		printf("index: %d ", a);
-		printf("File name: %s ", buffer_filename);
-		printf("comp. size: %d ", f[a].fe.compressedSize);
-		printf("decomp. size: %d ", f[a].fe.deCompressedSize);	
-		
-		f[a].offset = global_offset_counter_thingie;
-		global_offset_counter_thingie += f[a].fe.compressedSize;
-		printf("offset: %d\n", f[a].offset);	
-	}
-	
-		
-    fclose(file);
+  UINT32 global_offset_counter_thingie = 11;
+  
+  const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
+  BYTE *fileBuf;							// Pointer to our buffered data
+  FILE *file = NULL;						// File pointer
+  
+  if ((file = fopen(filePath, "rb")) == NULL) {
+    cout << "Could not open specified file" << endl;
+  }
+  else {
+    cout << "File opened successfully" << endl;
+  }
+  
+  long fileSize = getFileSize(file);
+  printf("filesize    : %lu\n", fileSize);
+  
+  
+  //FileHeader fh;	
+  fread(&fh, sizeof(FileHeader), 1, file);
+  
+  printf("unknown     : %d\n", fh.unknown);
+  printf("numFiles    : %d\n", fh.numFiles);
+  printf("fatOffset   : %lu\n", (long unsigned int) fh.fatOffset);
+  
+  cout << "======LOOKING=AT=FAT====" << endl;
+  
+  fseek(file, fh.fatOffset, SEEK_SET);
+  CFileEntry* f = new CFileEntry[fh.numFiles];
+  *f_ptr = f;
+  
+  memset((void*) f, 0x0, sizeof(FileEntry) * fh.numFiles);
+  
+  printf("sizeof = %d", sizeof(FileEntry));
+  for (int a =0; a < fh.numFiles; a++) {
+    
+    fread(&f[a].fe, sizeof(FileEntry), 1, file);
+    
+    if(feof(file)) {
+      abort();
+    }
+    
+    char buffer_filename[14];
+    strncpy(buffer_filename, f[a].fe.filename, 13);
+    buffer_filename[13] = 0x0;
+    
+    
+    printf("index: %d ", a);
+    printf("File name: %s ", buffer_filename);
+    printf("comp. size: %d ", f[a].fe.compressedSize);
+    printf("decomp. size: %d ", f[a].fe.deCompressedSize);	
+    
+    f[a].offset = global_offset_counter_thingie;
+    global_offset_counter_thingie += f[a].fe.compressedSize;
+    printf("offset: %d\n", f[a].offset);	
+  }
+  
+  fclose(file);
 }
 
 void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* fileEntries){
-	const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-	BYTE *fileBuf;							// Pointer to our buffered data
-	FILE *file = NULL;						// File pointer
-
-	if ((file = fopen(filePath, "rb")) == NULL) {
-		cout << "Could not open specified file" << endl;
-	}
-	else {
-		cout << "File opened successfully" << endl;
-	}
-
-	for (int a =0; a < 1 /*fileHeader.numFiles*/; a++) {
-		
-		cout << fileEntries[a].fe.filename << endl;
-
-		char buffer_filename[14];
-		strncpy(buffer_filename, fileEntries[a].fe.filename, 13);
-		buffer_filename[13] = 0x0;
-
-		printf("File name: %s ", buffer_filename);
-		printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
-		printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
-
-		if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
-			cout << "File found in index" << endl;
-		}
-	}
-
-
-	// TODO : need to compare filename with one from index to get the entry fo the file we need to inflate
-	//        
-
-	//fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
-
-	//fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
-
-	if(feof(file)) {
-		abort();
-	}
-
-	// TODO: inflate + save file..
-
-	fclose(file);
-
-	printf("sizeof = %d", sizeof(FileEntry));
-
-
+  const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
+  BYTE *fileBuf;							// Pointer to our buffered data
+  FILE *file = NULL;						// File pointer
+  
+  if ((file = fopen(filePath, "rb")) == NULL) {
+    cout << "Could not open specified file" << endl;
+  }
+  else {
+    cout << "File opened successfully" << endl;
+  }
+  
+  for (int a =0; a < 1 /*fileHeader.numFiles*/; a++) {
+    
+    cout << fileEntries[a].fe.filename << endl;
+    
+    char buffer_filename[14];
+    strncpy(buffer_filename, fileEntries[a].fe.filename, 13);
+    buffer_filename[13] = 0x0;
+    
+    printf("File name: %s ", buffer_filename);
+    printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
+    printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
+    
+    if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
+      cout << "File found in index" << endl;
+    }
+  }
+  
+  
+  // TODO : need to compare filename with one from index to get the entry fo the file we need to inflate
+  //        
+  
+  //fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
+  
+  //fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
+  
+  if(feof(file)) {
+    abort();
+  }
+  
+  // TODO: inflate + save file..
+  
+  fclose(file);
+  
+  printf("sizeof = %d", sizeof(FileEntry));
+  
+  
 }
 
 int main() {
-	FileHeader fh;
-	CFileEntry *f;
-	parseEpsStructure(fh,f);
-	inflateFile("README.TXT", fh, f);
-	return 0;
+  FileHeader fh;
+  CFileEntry *f = NULL;
+  parseEpsStructure(fh,&f);
+  inflateFile("README.TXT", fh, f);
+  return 0;
 }
 
