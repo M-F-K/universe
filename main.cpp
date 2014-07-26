@@ -1,8 +1,3 @@
-
-
-// UniverseTest.cpp : Defines the entry point for the console application.
-//
-
 //#include "stdafx.h"    ... precompiled headers for win ... yuck ....
 
 /*****************************************************************************************
@@ -30,7 +25,7 @@ this is optional.
 
 using namespace std;
 
-typedef unsigned char	BYTE;       // An unsigned char can store 1Bytes (8bits) of data (0-255)
+typedef unsigned char	BYTE;		//   An unsigned char can store 1Bytes (8bits) of data (0-255)
 typedef unsigned int	UINT32;
 typedef unsigned short  UINT16;
 
@@ -40,15 +35,15 @@ struct structFileHeader {
 	UINT32 fatOffset;
 	BYTE unknown;
 	UINT16 numFiles;
-} __attribute__((packed));		// gcc specific pack
+} __attribute__((packed));		//   gcc specific pack
 
 #pragma pack(1)
 struct structFileEntry {
-	char	filename[13];     //   SIZE 10
-	BYTE	compressed;       //   SIZE 1
-	UINT32	compressedSize;   //   SIZE 4
-	UINT32	deCompressedSize; //   SIZE 4
-} __attribute__((packed));		// gcc specific pack
+	char	filename[13];		//   SIZE 10
+	BYTE	compressed;		//   SIZE 1
+	UINT32	compressedSize;		//   SIZE 4
+	UINT32	deCompressedSize;	//   SIZE 4
+} __attribute__((packed));		//   gcc specific pack
 
 struct structCompleteFileEntry {
 	struct structFileEntry fe;
@@ -70,12 +65,12 @@ long getFileSize(FILE *file){
 	return lEndPos;
 }
 
-void parseEpsStructure(FileHeader fh, CFileEntry** f_ptr){
+void parseEpsStructure(FileHeader** fh_ptr, CFileEntry** f_ptr){
 
   UINT32 global_offset_counter_thingie = 11;
   
   const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-  BYTE *fileBuf;							// Pointer to our buffered data
+  BYTE *fileBuf;						// Pointer to our buffered data
   FILE *file = NULL;						// File pointer
   
   if ((file = fopen(filePath, "rb")) == NULL) {
@@ -88,24 +83,24 @@ void parseEpsStructure(FileHeader fh, CFileEntry** f_ptr){
   long fileSize = getFileSize(file);
   printf("filesize    : %lu\n", fileSize);
   
+  FileHeader* fh = new FileHeader;
+  *fh_ptr = fh;	
+  fread(&*fh, sizeof(FileHeader), 1, file);
   
-  //FileHeader fh;	
-  fread(&fh, sizeof(FileHeader), 1, file);
-  
-  printf("unknown     : %d\n", fh.unknown);
-  printf("numFiles    : %d\n", fh.numFiles);
-  printf("fatOffset   : %lu\n", (long unsigned int) fh.fatOffset);
+  printf("unknown     : %d\n", fh->unknown);
+  printf("numFiles    : %d\n", fh->numFiles);
+  printf("fatOffset   : %lu\n", (long unsigned int) fh->fatOffset);
   
   cout << "======LOOKING=AT=FAT====" << endl;
   
-  fseek(file, fh.fatOffset, SEEK_SET);
-  CFileEntry* f = new CFileEntry[fh.numFiles];
+  fseek(file, fh->fatOffset, SEEK_SET);
+  CFileEntry* f = new CFileEntry[fh->numFiles];
   *f_ptr = f;
   
-  memset((void*) f, 0x0, sizeof(FileEntry) * fh.numFiles);
+  memset((void*) f, 0x0, sizeof(FileEntry) * fh->numFiles);
   
-  printf("sizeof = %d", sizeof(FileEntry));
-  for (int a =0; a < fh.numFiles; a++) {
+  //printf("sizeof = %d", sizeof(FileEntry));
+  for (int a =0; a < fh->numFiles; a++) {
     
     fread(&f[a].fe, sizeof(FileEntry), 1, file);
     
@@ -131,9 +126,9 @@ void parseEpsStructure(FileHeader fh, CFileEntry** f_ptr){
   fclose(file);
 }
 
-void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* fileEntries){
+void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry* fileEntries){
   const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-  BYTE *fileBuf;							// Pointer to our buffered data
+  BYTE *fileBuf;						// Pointer to our buffered data
   FILE *file = NULL;						// File pointer
   
   if ((file = fopen(filePath, "rb")) == NULL) {
@@ -143,48 +138,39 @@ void inflateFile(const char* packedFilename, FileHeader fileHeader, CFileEntry* 
     cout << "File opened successfully" << endl;
   }
   
-  for (int a =0; a < 1 /*fileHeader.numFiles*/; a++) {
-    
-    cout << fileEntries[a].fe.filename << endl;
-    
+  for (int a =0; a < fileHeader->numFiles; a++) {
+
     char buffer_filename[14];
     strncpy(buffer_filename, fileEntries[a].fe.filename, 13);
     buffer_filename[13] = 0x0;
     
-    printf("File name: %s ", buffer_filename);
-    printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
-    printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
-    
     if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
-      cout << "File found in index" << endl;
+
+     	cout << "File found in index : " << endl;
+    	printf("File name: %s ", buffer_filename);
+    	printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
+    	printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
+
+  
+	// TODO: inflate + save file..
+	//fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
+	//fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
     }
   }
-  
-  
-  // TODO : need to compare filename with one from index to get the entry fo the file we need to inflate
-  //        
-  
-  //fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
-  
-  //fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
+    
   
   if(feof(file)) {
     abort();
   }
   
-  // TODO: inflate + save file..
-  
   fclose(file);
-  
-  printf("sizeof = %d", sizeof(FileEntry));
-  
-  
 }
 
+
 int main() {
-  FileHeader fh;
+  FileHeader *fh = NULL;
   CFileEntry *f = NULL;
-  parseEpsStructure(fh,&f);
+  parseEpsStructure(&fh,&f);
   inflateFile("README.TXT", fh, f);
   return 0;
 }
