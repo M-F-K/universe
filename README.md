@@ -12,7 +12,8 @@ http://www.youtube.com/watch?v=JofClGppogw
 
 What im trying to do :
 
-Trying to parse and dump the filestructure, and maybe one day decompress the files.
+1. ~~Trying to parse and dump the filestructure.~~ __DONE__
+2. Decompress the files.
 
 This wikipage would probably explain it in more details:
 
@@ -23,6 +24,6 @@ Building:
 
 you need to have a copy of the universe game.
 
-1) place the UNIVERSE.EPF file with the code.
-2) g++ main.cpp -o universe
-3) run the compiled file.
+1. place the UNIVERSE.EPF file with the code.
+2. g++ main.cpp -o universe
+3. run the compiled file.
