@@ -65,6 +65,53 @@ long getFileSize(FILE *file){
 	return lEndPos;
 }
 
+
+unsigned char saver(bool bits[])
+{
+   unsigned char output=0;
+   for(int i=0;i<8;i++)
+   {
+
+           output=output|(bits[i]<<i); //probably faster than if(){output|=(1<<i);}
+           //example: for the starting array 00000000
+           //first iteration sets:           00000001 only if bits[0] is true
+           //second sets:                    0000001x only if bits[1] is true
+           //third sets:                     000001xx only third is true
+           //fifth:                          00000xxx if fifth is false
+           // x is the value before
+
+   }
+   return output;
+}
+
+//You can load 8 bits from a single byte:
+void loader(unsigned char var, bool * bits)
+{
+
+   for(int i=0;i<8;i++)
+   {
+
+       bits[i] = var & (1 << i);
+       // for example you loaded var as "200" which is 11001000 in binary
+       // 11001000 --> zeroth iteration gets false
+       // first gets false
+       // second false
+       // third gets true 
+       //...
+   }
+
+}
+
+// 1<<0 is 1  -----> 00000001
+// 1<<1 is 2  -----> 00000010
+// 1<<2 is 4  -----> 00000100
+// 1<<3 is 8  -----> 00001000
+// 1<<4 is 16  ----> 00010000
+// 1<<5 is 32  ----> 00100000
+// 1<<6 is 64  ----> 01000000
+// 1<<7 is 128  ---> 10000000
+
+
 void parseEpsStructure(FileHeader** fh_ptr, CFileEntry** f_ptr){
 
   UINT32 global_offset_counter_thingie = 11;
@@ -152,19 +199,24 @@ void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry*
     	printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
 
   
+	// load the compressed filedata into buffer
+	char buffer[fileEntries[a].fe.compressedSize];
+	fseek(file, fileHeader->fatOffset, SEEK_SET);
+	fread(buffer, fileEntries[a].fe.compressedSize, 1, file);
+
+	//loader();
+
 	// TODO: inflate + save file..
-	//fseek(file, fh.fatOffset, SEEK_SET);  //FIXME ...params
-	//fread(&f[a].fe, sizeof(FileEntry), 1, file);  //FIXME ...params
     }
+
+    if(feof(file)) {
+    	abort();
+    }
+
   }
-    
-  
-  if(feof(file)) {
-    abort();
-  }
-  
   fclose(file);
 }
+
 
 
 int main() {
