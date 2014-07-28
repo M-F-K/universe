@@ -1,29 +1,31 @@
-//#include "stdafx.h"    ... precompiled headers for win ... yuck ....
-
 /*****************************************************************************************
 * File: main.cpp
-* Desc: file analyser / dumper tool for the Universe game from Core (1994).
+* Desc: file analyser / dumper tool for the Universe game from Core Design™ (1994).
 *****************************************************************************************/
 
 /*
 License :	Yadadadadadadadada, this code is free, you can use it for
-anything as long as you don't hold me liable for ANY damages
-			that may be the result of using it. This includes dying of laughter
-of the piss poor quality. If you use it for
-            anything, it would be nice if you dropped me a line, but
-this is optional.
+            anything as long as you don't hold me liable for ANY damages
+			   that may be the result of using it. This includes dying of laughter
+            of the piss poor quality. If you use it for anything, it would
+            be nice if you dropped me a line, but this is optional.
 */
+
 // https://github.com/Malvineous/libgamearchive/blob/master/src/filter-epfs.cpp
+
 // ----- Includes -----
 #include <stdio.h>
 #include <iostream>
 #include <stack>
 #include <cstdlib>
 #include <string.h>
-#include "lzw.h"
-// #include <stdint.h>
+#include "lzw.h"                 //   TODO: remove lzw from repos when own implemantation is working
+#include <stdint.h>
 
 using namespace std;
+
+uint64_t counter = 0;            //   parse specific global
+uint8_t  *buffer = NULL;         //   parse specific global 
 
 typedef unsigned char	BYTE;		//   An unsigned char can store 1Bytes (8bits) of data (0-255)
 typedef unsigned int	UINT32;
@@ -35,15 +37,15 @@ struct structFileHeader {
 	UINT32 fatOffset;
 	BYTE unknown;
 	UINT16 numFiles;
-} __attribute__((packed));		//   gcc specific pack
+} __attribute__((packed));       //   gcc specific pack
 
 #pragma pack(1)
 struct structFileEntry {
-	char	filename[13];		//   SIZE 10
-	BYTE	compressed;		//   SIZE 1
-	UINT32	compressedSize;		//   SIZE 4
-	UINT32	deCompressedSize;	//   SIZE 4
-} __attribute__((packed));		//   gcc specific pack
+	char	filename[13];           //   SIZE 10
+	BYTE	compressed;             //   SIZE 1
+	UINT32	compressedSize;      //   SIZE 4
+	UINT32	deCompressedSize;    //   SIZE 4
+} __attribute__((packed));       //   gcc specific pack
 
 struct structCompleteFileEntry {
 	struct structFileEntry fe;
@@ -112,9 +114,39 @@ void loader(unsigned char var, bool * bits)
 // 1<<7 is 128  ---> 10000000
 
 
+
+
+
+
+ 
+
+uint64_t getNextToken(size_t bitsize) {
+
+   uint64_t mask = (1 << (bitsize+1)) - 1;
+   uint64_t remainder = counter % 8;
+   uint64_t *ptr = (uint64_t*) buffer + (counter / 8);
+
+   counter = counter + bitsize;
+
+   uint64_t tmp = *ptr;
+   uint64_t value = tmp >> remainder;
+
+   return value & mask;
+}
+
+
+void parseBuffer(){
+
+   uint64_t counter = 0;
+   uint8_t  *buffer = NULL;
+
+   //TODO keep track of bitsize + loop parse
+}
+
+
 void parseEpsStructure(FileHeader** fh_ptr, CFileEntry** f_ptr){
 
-  UINT32 global_offset_counter_thingie = 11;
+   UINT32 global_offset_counter_thingie = 11;
   
   const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
   BYTE *fileBuf;						// Pointer to our buffered data
@@ -199,12 +231,13 @@ void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry*
     	printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
 
   
-	// load the compressed filedata into buffer
-	char buffer[fileEntries[a].fe.compressedSize];
-	fseek(file, fileHeader->fatOffset, SEEK_SET);
-	fread(buffer, fileEntries[a].fe.compressedSize, 1, file);
-
-	//loader();
+	   // load the compressed filedata into buffer
+	   char buffer[fileEntries[a].fe.compressedSize + 8];	// we're going to read 64 bytes at a time, so we add 8 ekstra bytes to avoid out of bounds read
+      memset(buffer, 0, sizeof buffer);
+	   fseek(file, fileHeader->fatOffset, SEEK_SET);
+	   fread(buffer, fileEntries[a].fe.compressedSize, 1, file);
+	
+      parseBuffer();
 
 	// TODO: inflate + save file..
     }
