@@ -19,7 +19,7 @@ License :	Yadadadadadadadada, this code is free, you can use it for
 #include <stack>
 #include <cstdlib>
 #include <string.h>
-#include "lzw.h"                 //   TODO: remove lzw from repos when own implemantation is working
+#include <vector>
 #include <stdint.h>
 
 using namespace std;
@@ -114,7 +114,54 @@ void loader(unsigned char var, bool * bits)
 // 1<<7 is 128  ---> 10000000
 
 
+	/**
+* Cross-Platform version of itoa. support only 10 radix for easy use and better performance
+* taken from http://code.google.com/p/my-itoa/ (LGPL)
+*
+* @param val The int that needs to be converted
+* @param buf The char buffer that is going to held the result
+* @return The length of the result String.
+*/
+static inline int itoa(int val, char* buf) {
+const unsigned int radix = 10;
 
+char* p;
+unsigned int a; //every digit
+int len;
+char* b; //start of the digit char
+char temp;
+unsigned int u;
+
+p = buf;
+
+if (val < 0) {
+*p++ = '-';
+val = 0 - val;
+}
+
+u = (unsigned int)val;
+b = p;
+
+do {
+a = u % radix;
+u /= radix;
+*p++ = (char)a + '0';
+} while (u > 0);
+
+len = (int)(p - buf);
+*p-- = 0;
+
+//swap
+do {
+temp = *p;
+*p = *b;
+*b = temp;
+--p;
+++b;
+} while (b < p);
+
+return len;
+}
 
 
 
@@ -136,11 +183,49 @@ uint64_t getNextToken(size_t bitsize) {
 
 
 void parseBuffer(){
+   /*
+      Setting up the LZW string output table, index 0 - 255 is a copy of the ascii table.
+      This means that index 256 and forward is going to hold the decompressed data.
+   */
+   vector<string> stringTable;
+   for (int i=0; i<256; i++){
+      char* temp;
+      itoa(i, temp);
+      stringTable.push_back(temp);  // FIXME : segmentation fault ....
+   }
 
-   uint64_t counter = 0;
-   uint8_t  *buffer = NULL;
+   int bitlength = 9; // initial bitlength is 9, max bitlength is 14
+   int nextFreeIndex = 256;
 
-   //TODO keep track of bitsize + loop parse
+   /*uint64_t*/ counter = 0;
+   /*uint8_t */ buffer = NULL;
+   uint64_t oldCode = 0;
+   uint64_t newCode = 0;
+   char* character = 0;
+   string str = NULL;
+
+   /* TODO: implement the LZW algorithm here */
+   
+   oldCode  = getNextToken(bitlength); // FIXME: remember to increase the bitlength
+   cout << oldCode;
+   *character = (char) oldCode;
+
+
+   while ((newCode = getNextToken(bitlength)) != 1023){
+      if (newCode < nextFreeIndex) {
+         str = stringTable.at(newCode);
+         str = str + character;
+      }
+      else{
+         str = str + str[0];//get translation of NEW_CODE;    .. note , this is probably fucked up ....fixme
+      }
+      cout << str;
+      *character = str[0];
+      stringTable.push_back(oldCode + character);
+      nextFreeIndex++;
+      oldCode = newCode;
+   }
+
 }
 
 
@@ -149,7 +234,7 @@ void parseEpsStructure(FileHeader** fh_ptr, CFileEntry** f_ptr){
    UINT32 global_offset_counter_thingie = 11;
   
   const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-  BYTE *fileBuf;						// Pointer to our buffered data
+  //BYTE *fileBuf;						// Pointer to our buffered data
   FILE *file = NULL;						// File pointer
   
   if ((file = fopen(filePath, "rb")) == NULL) {
@@ -207,7 +292,7 @@ void parseEpsStructure(FileHeader** fh_ptr, CFileEntry** f_ptr){
 
 void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry* fileEntries){
   const char *filePath = "./UNIVERSE.EPF";			// File path to the universe binary
-  BYTE *fileBuf;						// Pointer to our buffered data
+  //BYTE *fileBuf;						// Pointer to our buffered data
   FILE *file = NULL;						// File pointer
   
   if ((file = fopen(filePath, "rb")) == NULL) {
@@ -225,10 +310,10 @@ void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry*
     
     if(strcmp(packedFilename, fileEntries[a].fe.filename) == 0) {
 
-     	cout << "File found in index : " << endl;
-    	printf("File name: %s ", buffer_filename);
-    	printf("comp. size: %d ", fileEntries[a].fe.compressedSize);
-    	printf("decomp. size: %d ", fileEntries[a].fe.deCompressedSize);
+     	cout << "File found in index!" << endl;
+    	printf("File name   : %s \n", buffer_filename);
+    	printf("comp. size  : %d \n", fileEntries[a].fe.compressedSize);
+    	printf("decomp. size: %d \n", fileEntries[a].fe.deCompressedSize);
 
   
 	   // load the compressed filedata into buffer
@@ -237,9 +322,7 @@ void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry*
 	   fseek(file, fileHeader->fatOffset, SEEK_SET);
 	   fread(buffer, fileEntries[a].fe.compressedSize, 1, file);
 	
-      parseBuffer();
-
-	// TODO: inflate + save file..
+      //parseBuffer(); // TODO: turn this on when everything works....
     }
 
     if(feof(file)) {
