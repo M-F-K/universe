@@ -189,24 +189,24 @@ void parseBuffer(){
    */
    vector<string> stringTable;
    for (int i=0; i<256; i++){
-      char* temp;
-      itoa(i, temp);
-      stringTable.push_back(temp);  // FIXME : segmentation fault ....
+      char c = i;      
+      char* temp = &c;
+      stringTable.push_back(temp);
    }
 
    int bitlength = 9; // initial bitlength is 9, max bitlength is 14
    int nextFreeIndex = 256;
 
    /*uint64_t*/ counter = 0;
-   /*uint8_t */ buffer = NULL;
+   /*uint8_t */ //buffer = NULL;
    uint64_t oldCode = 0;
    uint64_t newCode = 0;
    char* character = 0;
-   string str = NULL;
+   string str = "";
 
    /* TODO: implement the LZW algorithm here */
    
-   oldCode  = getNextToken(bitlength); // FIXME: remember to increase the bitlength
+   oldCode  = getNextToken(bitlength); // FIXME: remember to increase the bitlength  ... also this currently segfaults here (178)
    cout << oldCode;
    *character = (char) oldCode;
 
