@@ -175,7 +175,7 @@ uint64_t getNextToken(size_t bitsize) {
 
    counter = counter + bitsize;
 
-   uint64_t tmp = *ptr;
+   uint64_t tmp = *ptr; // FIXME: this generates a segfault ... buffer is 0x0, counter is 0, and therefore ptr is also 0x0
    uint64_t value = tmp >> remainder;
 
    return value & mask;
@@ -319,7 +319,7 @@ void inflateFile(const char* packedFilename, FileHeader* fileHeader, CFileEntry*
 	   // load the compressed filedata into buffer
 	   char buffer[fileEntries[a].fe.compressedSize + 8];	// we're going to read 64 bytes at a time, so we add 8 ekstra bytes to avoid out of bounds read
       memset(buffer, 0, sizeof buffer);
-	   fseek(file, fileHeader->fatOffset, SEEK_SET);
+	   fseek(file, /*fileHeader->fatOffset*/fileEntries[a].offset, SEEK_SET);
 	   fread(buffer, fileEntries[a].fe.compressedSize, 1, file);
 	
       //parseBuffer(); // TODO: turn this on when everything works....
