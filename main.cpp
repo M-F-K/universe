@@ -96,7 +96,7 @@ void parseBuffer(){
    }
 
    int bitlength = 9; // initial bitlength is 9, max bitlength is 14
-   int nextFreeIndex = 256;
+   uint32_t nextFreeIndex = 256;
 
    /*uint64_t*/ counter = 0;
    /*uint8_t */ //buffer = NULL;
